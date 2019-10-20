@@ -1,0 +1,25 @@
+{
+  "name": "task-manager",
+  "version": "1.0.0",
+  "description": "task manager api",
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GinaKui/task-manager.git"
+  },
+  "author": "Gina Kui",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/GinaKui/task-manager/issues"
+  },
+  "homepage": "https://github.com/GinaKui/task-manager#readme",
+  "dependencies": {
+    "mongodb": "^3.3.3",
+    "mongoose": "^5.7.5",
+    "validator": "^11.1.0"
+  }
+}
