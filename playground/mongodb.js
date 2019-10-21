@@ -1,4 +1,7 @@
-//CRUD operations
+/*
+* mongodb is a lower lever mongoDB driver
+* mongoose is much easier to use
+*/
 
 const mongodb = require('mongodb');
 const MongoClient = mongodb.MongoClient;
