@@ -1,31 +1,62 @@
 const express = require('express');
 const User = require('../models/user');
-
+const auth = require('../middleware/auth');
 const router = new express.Router();
 
-//Login
-router.post('/users/login', async (req, res) => {
-  try {
-    const user = await User.findByCredentials(req.body.email, req.body.password);
-    res.send(user);
-  } catch (err) {
-    res.status(400).send();
-  }
-});
+
 
 //create
 router.post('/users', async (req, res) => {
   const user = new User(req.body);
   try {
     await user.save();
-    res.status(201).send(user);
+    const token = await user.generateAuthToken();
+    res.status(201).send({ user, token });
   } catch (err) {
     res.status(401).send(err);
   }
 });
 
-//read
-router.get('/users', async (req, res) => {
+//Login
+router.post('/users/login', async (req, res) => {
+  try {
+    const user = await User.findByCredentials(req.body.email, req.body.password);
+    const token = await user.generateAuthToken();
+    res.send({ user, token });
+  } catch (err) {
+    res.status(400).send();
+  }
+});
+
+//Logout
+router.post('/users/logout', auth, async (req, res) => {
+  try {
+    req.user.tokens = req.user.tokens.filter(token => token.token !== req.token );
+    await req.user.save();
+    res.send();
+  } catch (err) {
+    res.status(500).send();
+  }
+});
+
+router.post('/users/logoutAll', auth, async (req, res) => {
+  try {
+    req.user.tokens = [];
+    await req.user.save();
+    res.send();
+  } catch (err) {
+    res.status(500).send();
+  }
+});
+
+router.get('/users/me', auth, async (req, res) => {
+  res.send(req.user);
+});
+
+/**
+ * Read, Private Route
+ */
+router.get('/users', auth, async (req, res) => {
   try{
     const users = await User.find({});
     res.send(users);
@@ -34,19 +65,8 @@ router.get('/users', async (req, res) => {
   }
 });
 
-//read
-router.get('/users/:id', async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    if(!user) return res.status(404).send('User not found');
-    res.send(user);
-  } catch (err) {
-    res.status(500).send('server error');
-  }
-});
-
 //update
-router.patch('/users/:id', async (req, res) => {
+router.patch('/users/me', auth, async (req, res) => {
   const updates = Object.keys(req.body);
   const allowedUpdates = ['name', 'email', 'password', 'age'];
   const isValidOperation = updates.every(update => allowedUpdates.includes(update) );
@@ -56,23 +76,21 @@ router.patch('/users/:id', async (req, res) => {
 
   try {
     //const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    const user = await User.findById(req.params.id);
-    updates.forEach(update => user[update] = req.body[updates]);
-    await user.save();  //use save() instead of findByIdAndUpdate(), to ensure the authentication middleware will be called
-
-    if(!user) return res.status(404).send('User not found');
-    res.send(user);
+    updates.forEach(update => req.user[update] = req.body[updates]);
+    await req.user.save();  //use save() instead of findByIdAndUpdate(), to ensure the authentication middleware will be called    
+    res.send(req.user);
   } catch(err) {
     res.status(400).send('server error');;
   }
 });
 
 //Delete
-router.delete('/users/:id', async (req, res) => {
+router.delete('/users/me', auth, async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
-    if(!user) return res.status(404).send('User not found');
-    res.send(user);
+    // const user = await User.findByIdAndDelete(req.user._id);
+    // if(!user) return res.status(404).send('User not found');
+    await req.user.remove(); //mongoose method, remove()
+    res.send(req.user);
   } catch(err) {
     res.status(500).send('server error');;
   }
