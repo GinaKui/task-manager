@@ -21,11 +21,33 @@ router.post('/tasks', auth, async (req, res) => {
   }
 });
 
-//Read
+//Get /tasks?completed=true
+//Get /tasks?limit=10&skip=0
+//Get /tasks?sortBy=createdAt_asc
 router.get('/tasks', auth, async (req, res) => {
+  const match = {};
+  const sort = {};
+  //req.query.completed is a string or undefined
+  if (req.query.completed) {
+    match.completed = req.query.completed === 'true'? true : false;
+  }
+
+  if(req.query.sortBy) {
+    const parts = req.query.sortBy.split(':');
+    sort[parts[0]] = parts[1] === 'desc' ? -1 : 1;
+  }
+
   try {
     //const tasks = await Task.find({ owner: req.user._id });
-    await req.user.populate('tasks').execPopulate();
+    await req.user.populate({
+      path: 'tasks',
+      match,
+      options: {
+        limit: parseInt(req.query.limit),
+        skip: parseInt(req.query.skip),
+        sort
+      }
+    }).execPopulate();
     res.send(req.user.tasks);
   } catch (err) { 
     res.status(500).send('server error');
