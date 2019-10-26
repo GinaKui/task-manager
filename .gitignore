@@ -9,5 +9,6 @@
 
 #env variable
 /config
+.env
 
 npm-debug.log*
